@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foundry Yard — Rivals</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="overlay" class="overlay">
+  <div class="panel">
+    <div class="eyebrow">RIVALS • MULTIPLAYER ARENA</div>
+    <h1>FOUNDRY <span>YARD</span></h1>
+    <p class="subtitle">Industrial combat. One winner.</p>
+    <label for="playerName">CALLSIGN</label>
+    <input id="playerName" maxlength="16" placeholder="Enter your name" value="Player">
+    <button id="playButton">ENTER THE YARD</button>
+    <p id="status">Connecting to game server…</p>
+    <div class="controls">WASD move · Mouse aim · Click fire · Space jump · Esc release mouse</div>
+  </div>
+</div>
+<div id="hud" class="hud hidden">
+ <div class="brand">FOUNDRY <span>YARD</span><small>RIVALS</small></div>
+ <div class="topstats"><div><small>ROUND</small><b id="round">WAITING</b></div><div><small>SCORE</small><b id="score">0 — 0</b></div><div><small>PLAYERS</small><b id="players">0 / 10</b></div></div>
+ <div class="crosshair"><i></i><i></i></div>
+ <div class="bottom"><div class="health"><small>VITALS</small><b id="health">100</b><div class="bar"><i id="healthBar"></i></div></div><div class="hint">WASD MOVE <span>•</span> CLICK FIRE <span>•</span> SPACE JUMP</div></div>
+ <div id="feed" class="feed"></div>
+</div>
+<script type="module" src="/client.js"></script>
+</body>
+</html>
