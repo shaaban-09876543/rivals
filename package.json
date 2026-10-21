@@ -1,0 +1,17 @@
+{
+  "name": "foundry-yard-browser-fps",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Foundry Yard browser-based multiplayer FPS prototype",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
