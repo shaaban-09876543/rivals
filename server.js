@@ -26,7 +26,14 @@ const mimeTypes = {
 };
 
 const server = http.createServer((req, res) => {
-  const pathname = decodeURIComponent(new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname);
+  let pathname;
+  try { pathname = decodeURIComponent(new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname); }
+  catch (_) { res.writeHead(400).end('Bad request'); return; }
+  if (pathname === '/health' || pathname === '/healthz') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ ok: true, service: 'foundry-yard', websocket: 'available', uptimeSeconds: Math.floor(process.uptime()) }));
+    return;
+  }
   const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
   const resolved = path.resolve(PUBLIC_DIR, relative);
   if (!resolved.startsWith(PUBLIC_DIR + path.sep) && resolved !== path.join(PUBLIC_DIR, 'index.html')) {
@@ -225,7 +232,8 @@ function sendError(ws, code, message) {
   safeSend(ws, { type: 'error', code, message });
 }
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  console.log(`[Foundry Yard] WebSocket connected remote=${String(req.socket.remoteAddress || 'unknown').slice(0, 64)}`);
   ws.isAlive = true;
   ws.playerId = null;
   ws.lastMessageAt = Date.now();
@@ -248,7 +256,7 @@ wss.on('connection', (ws) => {
     }
 
     if (msg.type === 'hello') {
-      if (ws.playerId) return;
+      if (ws.playerId) { sendError(ws, 'already_joined', 'This socket has already joined.'); return; }
       const token = typeof msg.token === 'string' && /^[a-f0-9-]{20,80}$/i.test(msg.token) ? msg.token : null;
       let player = token ? players.get(tokenToPlayer.get(token)) : null;
       if (player) {
@@ -273,6 +281,7 @@ wss.on('connection', (ws) => {
       const team = assignTeam();
       player = createPlayer(id, cleanName(msg.name), team, Date.now());
       players.set(id, player);
+      console.log(`[Foundry Yard] Player joined id=${id} team=${team} players=${players.size}`);
       attachPlayer(ws, player, newToken);
       return;
     }
@@ -346,8 +355,9 @@ wss.on('connection', (ws) => {
     sendError(ws, 'unknown_type', 'Unsupported message type.');
   });
 
-  ws.on('close', () => {
+  ws.on('close', (code, reason) => {
     const id = ws.playerId;
+    console.log(`[Foundry Yard] WebSocket closed code=${code} reason=${String(reason || '').slice(0, 120)} player=${id || 'unjoined'}`);
     if (!id || sockets.get(id) !== ws) return; // old replaced socket must not evict new session
     sockets.delete(id);
     const timer = setTimeout(() => {
@@ -356,7 +366,9 @@ wss.on('connection', (ws) => {
     timer.unref?.();
   });
 
-  ws.on('error', () => {});
+  ws.on('error', (error) => {
+    console.error(`[Foundry Yard] WebSocket error player=${ws.playerId || 'unjoined'}: ${String(error?.message || 'unknown error').slice(0, 240)}`);
+  });
 });
 
 const tickMs = 1000 / WORLD.tickRate;
@@ -404,6 +416,7 @@ timer.unref?.();
 
 server.listen(PORT, HOST, () => {
   console.log(`[Foundry Yard] HTTP/WebSocket server listening on http://${HOST}:${PORT}`);
+  console.log('[Foundry Yard] Health check available at /health');
   console.log(`[Foundry Yard] Authoritative tick ${WORLD.tickRate} Hz; snapshots ${WORLD.snapshotRate} Hz`);
 });
 
